@@ -80,7 +80,7 @@
                         <i data-lucide="user" class="w-4 h-4 text-brand-600"></i>
                         Identifiant
                     </label>
-                    <input type="text" id="username" placeholder="Ex: Nour" required
+                    <input type="text" id="username" placeholder="" required
                         class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition text-sm">
                 </div>
 
@@ -332,4 +332,103 @@
                                     <td class="p-4 text-right font-bold text-amber-600">12</td>
                                 </tr>
                             </tbody>
-              
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Page 2 : Stock (Masquée par défaut) -->
+            <div id="page-stock" class="hidden space-y-6 animate-fade-in">
+                <div class="bg-white p-8 rounded-2xl border border-slate-200 text-center text-slate-500">
+                    <i data-lucide="package-open" class="w-12 h-12 mx-auto text-brand-500 mb-3 animate-bounce"></i>
+                    <h3 class="font-bold text-slate-800 text-lg">Gestion du Stock Principal</h3>
+                    <p class="text-sm mt-1">L'affichage des articles et des entrées/sorties se fera ici.</p>
+                </div>
+            </div>
+
+            <!-- Page 3 : Inventaire (Masquée par défaut) -->
+            <div id="page-inventaire" class="hidden space-y-6 animate-fade-in">
+                <div class="bg-white p-8 rounded-2xl border border-slate-200 text-center text-slate-500">
+                    <i data-lucide="clipboard-list" class="w-12 h-12 mx-auto text-emerald-500 mb-3 animate-bounce"></i>
+                    <h3 class="font-bold text-slate-800 text-lg">Contrôle d'Inventaire</h3>
+                    <p class="text-sm mt-1">L'historique des contrôles et du rapprochement de stock s'affichera ici.</p>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- ================= LOGIQUE JAVASCRIPT ================= -->
+    <script>
+        // Initialisation des icônes Lucide au chargement
+        document.addEventListener("DOMContentLoaded", () => {
+            lucide.createIcons();
+            
+            // Vérifier si une session utilisateur est déjà en mémoire
+            const loggedUser = localStorage.getItem("ef_user");
+            if (loggedUser) {
+                showApp(loggedUser);
+            }
+        });
+
+        // Gestion de la connexion
+        function handleLogin(event) {
+            event.preventDefault();
+            const usernameInput = document.getElementById("Nour").value.trim();
+            const passwordInput = document.getElementById("Nour1969").value.trim();
+            const errorDiv = document.getElementById("login-error");
+
+            // Connexion acceptée pour tout identifiant non vide avec n'importe quel mot de passe pour tester
+            if (usernameInput.length > 0 && passwordInput.length > 0) {
+                errorDiv.classList.add("hidden");
+                localStorage.setItem("ef_user", usernameInput);
+                showApp(usernameInput);
+            } else {
+                errorDiv.classList.remove("hidden");
+            }
+        }
+
+        // Afficher l'application ERP
+        function showApp(username) {
+            document.getElementById("login-section").classList.add("hidden");
+            document.getElementById("app-section").classList.remove("hidden");
+            
+            // Mettre à jour le nom dans la barre latérale
+            const userDisplay = document.getElementById("user-display");
+            if (userDisplay) userDisplay.textContent = username;
+
+            // Rafraîchir les icônes sur la nouvelle vue
+            setTimeout(() => { lucide.createIcons(); }, 50);
+        }
+
+        // Déconnexion
+        function logout() {
+            localStorage.removeItem("ef_user");
+            document.getElementById("app-section").classList.add("hidden");
+            document.getElementById("login-section").classList.remove("hidden");
+            document.getElementById("login-form").reset();
+        }
+
+        // Navigation entre les pages
+        function showPage(pageId) {
+            // Masquer toutes les pages
+            document.getElementById("page-dashboard").classList.add("hidden");
+            document.getElementById("page-stock").classList.add("hidden");
+            document.getElementById("page-inventaire").classList.add("hidden");
+
+            // Afficher la page sélectionnée
+            const selectedPage = document.getElementById("page-" + pageId);
+            if (selectedPage) selectedPage.classList.remove("hidden");
+
+            // Changer le titre en haut
+            const titleEl = document.getElementById("page-title");
+            if (pageId === 'dashboard') titleEl.textContent = "Tableau de bord";
+            if (pageId === 'stock') titleEl.textContent = "Stock Principal";
+            if (pageId === 'inventaire') titleEl.textContent = "Inventaire";
+
+            // Recharge des icônes
+            lucide.createIcons();
+        }
+    </script>
+</body>
+</html>
