@@ -3,432 +3,414 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ELECTRO_FENNASSA - ERP & Gestion de Stock</title>
-
-    <!-- 1. Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- 2. Configuration Tailwind sécurisée pour mobile -->
-    <script>
-        window.tailwind = window.tailwind || {};
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        brand: {
-                            50: '#f0f9ff',
-                            100: '#e0f2fe',
-                            500: '#0284c7',
-                            600: '#0369a1',
-                            700: '#0369a1',
-                            800: '#075985',
-                            900: '#0c4a6e'
-                        }
-                    }
-                }
-            }
-        };
-    </script>
-
-    <!-- 3. Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-
-    <!-- 4. SheetJS (Excel) & PapaParse (CSV) -->
+    <title>ELECTRO_FENNASSA - ERP V2</title>
+    <!-- Bibliothèques externes -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- 5. Styles personnalisés -->
     <style>
-        @keyframes fadeIn { 
-            from { opacity: 0; transform: translateY(-5px); } 
-            to { opacity: 1; transform: translateY(0); } 
+        /* --- VARIABLES & RESET --- */
+        :root {
+            --primary: #2563eb; --primary-hover: #1d4ed8;
+            --secondary: #475569; --success: #16a34a;
+            --danger: #dc2626; --warning: #ca8a04;
+            --bg-body: #f1f5f9; --bg-sidebar: #1e293b;
+            --bg-card: #ffffff; --text-main: #0f172a;
+            --text-muted: #64748b; --text-light: #f8fafc;
+            --border: #e2e8f0; --radius: 8px;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
         }
-        .animate-fade-in { 
-            animation: fadeIn 0.2s ease-out forwards; 
+
+        .dark-mode {
+            --bg-body: #0f172a; --bg-sidebar: #020617;
+            --bg-card: #1e293b; --text-main: #f8fafc;
+            --text-muted: #94a3b8; --border: #334155;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.5);
         }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background-color: var(--bg-body); color: var(--text-main); transition: background 0.3s, color 0.3s; }
+        a { text-decoration: none; color: inherit; }
+        ul { list-style: none; }
+
+        /* --- UTILITIES --- */
+        .btn { padding: 8px 16px; border: none; border-radius: var(--radius); cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; color: white; transition: 0.2s; }
+        .btn:hover { opacity: 0.9; }
+        .btn-primary { background: var(--primary); }
+        .btn-success { background: var(--success); }
+        .btn-danger { background: var(--danger); }
+        .btn-warning { background: var(--warning); color: #fff; }
+        .btn-secondary { background: var(--secondary); }
+        .card { background: var(--bg-card); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); border: 1px solid var(--border); margin-bottom: 20px; }
+        
+        .form-group { margin-bottom: 15px; flex: 1; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 14px; }
+        .form-control { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-body); color: var(--text-main); }
+        .form-row { display: flex; gap: 15px; flex-wrap: wrap; }
+
+        /* --- LAYOUT --- */
+        #login-screen { height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg-sidebar); }
+        .login-box { background: var(--bg-card); padding: 40px; border-radius: var(--radius); width: 100%; max-width: 400px; text-align: center; }
+        
+        #app-screen { display: none; height: 100vh; overflow: hidden; }
+        .sidebar { width: 250px; background: var(--bg-sidebar); color: var(--text-light); display: flex; flex-direction: column; transition: 0.3s; z-index: 1000; }
+        .sidebar-header { padding: 20px; text-align: center; font-size: 20px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--primary); }
+        .sidebar-menu { flex: 1; overflow-y: auto; padding: 10px 0; }
+        .sidebar-menu li { padding: 12px 20px; cursor: pointer; display: flex; align-items: center; gap: 15px; border-left: 4px solid transparent; }
+        .sidebar-menu li:hover, .sidebar-menu li.active { background: rgba(255,255,255,0.1); border-left-color: var(--primary); }
+        
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .topbar { background: var(--bg-card); height: 60px; padding: 0 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+        .topbar-actions { display: flex; align-items: center; gap: 20px; }
+        .badge { position: absolute; top: -5px; right: -8px; background: var(--danger); color: white; font-size: 10px; padding: 2px 5px; border-radius: 10px; }
+
+        .content-area { flex: 1; overflow-y: auto; padding: 20px; }
+        .view-section { display: none; animation: fadeIn 0.3s; }
+        .view-section.active { display: block; }
+
+        /* --- TABLES --- */
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; text-align: left; white-space: nowrap; }
+        th, td { padding: 12px 15px; border-bottom: 1px solid var(--border); }
+        th { background: var(--bg-body); font-weight: 600; position: sticky; top: 0; }
+        tr:hover { background: rgba(0,0,0,0.02); }
+        .dark-mode tr:hover { background: rgba(255,255,255,0.02); }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        /* Mobile */
+        #menu-toggle { display: none; font-size: 20px; cursor: pointer; }
+        @media (max-width: 768px) {
+            #menu-toggle { display: block; margin-right: 15px; }
+            .sidebar { position: fixed; left: -250px; height: 100vh; box-shadow: 5px 0 15px rgb(0 0 0 / 0.5); }
+            .sidebar.open { left: 0; }
+            .form-row { flex-direction: column; }
+            #current-user-name { display: none; }
+        }
+
+        /* Styles Impression Reçu */
         @media print {
             body * { visibility: hidden; }
-            #print-section, #print-section * { visibility: visible; }
-            #print-section { position: absolute; left: 0; top: 0; width: 100%; }
+            #receipt-print-area, #receipt-print-area * { visibility: visible; }
+            #receipt-print-area { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; background: white; color: black; }
         }
     </style>
 </head>
-<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col justify-between">
+<body>
 
-    <!-- ================= SECTION CONNEXION ================= -->
-    <div id="login-section" class="flex-1 flex items-center justify-center p-4">
-        <div class="bg-white max-w-md w-full rounded-2xl shadow-xl p-8 border border-slate-200 animate-fade-in">
-            
-            <!-- Logo / En-tête -->
-            <div class="text-center mb-8">
-                <div class="inline-flex items-center justify-center w-16 h-16 bg-brand-600 text-white rounded-2xl font-bold text-2xl shadow-lg mb-4">
-                    EF
-                </div>
-                <h1 class="text-2xl font-black text-slate-900 tracking-wide">ELECTRO_FENNASSA</h1>
-                <p class="text-xs font-semibold text-slate-500 mt-1">BD LA RÉSISTANCE HAY JDID - TAOURIRT</p>
-            </div>
+    <!-- DATALISTS POUR RECHERCHES RAPIDES -->
+    <datalist id="produits-list"></datalist>
+    <datalist id="marques-list"></datalist>
+    <datalist id="fournisseurs-list"></datalist>
+    <datalist id="banques-maroc-list">
+        <option value="Attijariwafa Bank"></option>
+        <option value="Banque Populaire"></option>
+        <option value="Bank of Africa"></option>
+        <option value="CIH Bank"></option>
+        <option value="Crédit Agricole du Maroc"></option>
+        <option value="Société Générale Maroc"></option>
+        <option value="CFG Bank"></option>
+        <option value="BMCI"></option>
+        <option value="Al Barid Bank"></option>
+        <option value="Crédit du Maroc"></option>
+    </datalist>
 
-            <!-- Formulaire de connexion -->
-            <form id="login-form" class="space-y-5" onsubmit="handleLogin(event)">
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1 flex items-center gap-2">
-                        <i data-lucide="user" class="w-4 h-4 text-brand-600"></i>
-                        Identifiant
-                    </label>
-                    <input type="text" id="username" placeholder="" required
-                        class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition text-sm">
-                </div>
-
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1 flex items-center gap-2">
-                        <i data-lucide="lock" class="w-4 h-4 text-brand-600"></i>
-                        Mot de passe
-                    </label>
-                    <input type="password" id="password" placeholder="••••••••" required
-                        class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition text-sm">
-                </div>
-
-                <!-- Message d'erreur caché par défaut -->
-                <div id="login-error" class="hidden bg-red-50 text-red-600 text-xs font-semibold p-3 rounded-lg border border-red-200 flex items-center gap-2">
-                    <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
-                    <span>Identifiant ou mot de passe incorrect.</span>
-                </div>
-
-                <button type="submit" 
-                    class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 px-4 rounded-xl shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 text-sm">
-                    <span>Se connecter</span>
-                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
-                </button>
+    <!-- LOGIN -->
+    <div id="login-screen">
+        <div class="login-box">
+            <h1 style="color:var(--primary); margin-bottom:10px;"><i class="fas fa-bolt"></i> FENNASSA</h1>
+            <p class="text-muted" style="margin-bottom:20px;">Système ERP Intégré</p>
+            <form onsubmit="app.login(event)">
+                <div class="form-group"><input type="text" id="login-user" class="form-control" placeholder="Identifiant ()" required></div>
+                <div class="form-group"><input type="password" id="login-pass" class="form-control" placeholder="Mot de passe" required></div>
+                <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">Connexion</button>
             </form>
-
-            <!-- Pied de page connexion -->
-            <div class="mt-8 pt-4 border-t border-slate-100 text-center">
-                <p class="text-xs text-slate-400 flex items-center justify-center gap-1.5">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    Sauvegarde automatique active • Mode hors-ligne pris en charge
-                </p>
-            </div>
         </div>
     </div>
 
-
-    <!-- ================= SECTION APPLICATION (Masquée au départ) ================= -->
-    <div id="app-section" class="hidden min-h-screen flex flex-col md:flex-row bg-slate-100 w-full">
-        
-        <!-- Barre de navigation latérale (Sidebar) -->
-        <aside class="w-full md:w-64 bg-slate-900 text-slate-300 flex flex-col justify-between shrink-0 shadow-xl">
-            <div>
-                <!-- En-tête Sidebar -->
-                <div class="p-5 border-b border-slate-800 flex items-center justify-between">
-                    <div>
-                        <h2 class="font-black text-white text-lg tracking-wider">ELECTRO_FENNASSA</h2>
-                        <span class="text-[10px] bg-brand-600 text-white font-semibold px-2 py-0.5 rounded-full uppercase">ERP v2.5</span>
-                    </div>
-                    <button onclick="logout()" class="text-slate-400 hover:text-white md:hidden p-1">
-                        <i data-lucide="x" class="w-6 h-6"></i>
-                    </button>
-                </div>
-
-                <!-- Menus de navigation -->
-                <nav class="p-4 space-y-6 text-sm">
-                    <div>
-                        <p class="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2 px-2">Principal</p>
-                        <ul class="space-y-1">
-                            <li>
-                                <a href="#" onclick="showPage('dashboard')" class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-brand-600 text-white font-medium transition">
-                                    <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
-                                    <span>Tableau de bord</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a href="#" onclick="showPage('stock')" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition">
-                                    <i data-lucide="package" class="w-4 h-4"></i>
-                                    <span>Stock Principal</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a href="#" onclick="showPage('inventaire')" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition">
-                                    <i data-lucide="clipboard-check" class="w-4 h-4"></i>
-                                    <span>Inventaire</span>
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-
-                    <div>
-                        <p class="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2 px-2">Opérations</p>
-                        <ul class="space-y-1">
-                            <li>
-                                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition">
-                                    <i data-lucide="shopping-cart" class="w-4 h-4"></i>
-                                    <span>Nouvel Achat</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition">
-                                    <i data-lucide="shopping-bag" class="w-4 h-4"></i>
-                                    <span>Nouvelle Vente</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition">
-                                    <i data-lucide="file-text" class="w-4 h-4"></i>
-                                    <span>Factures</span>
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-
-                    <div>
-                        <p class="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2 px-2">Finances & Clients</p>
-                        <ul class="space-y-1">
-                            <li>
-                                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition">
-                                    <i data-lucide="users" class="w-4 h-4"></i>
-                                    <span>Crédits Clients</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition">
-                                    <i data-lucide="credit-card" class="w-4 h-4"></i>
-                                    <span>Chèques (Clients)</span>
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-                </nav>
-            </div>
-
-            <!-- Utilisateur connecté -->
-            <div class="p-4 border-t border-slate-800 bg-slate-950 flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-full bg-brand-600 flex items-center justify-center text-white font-bold text-xs">
-                        AD
-                    </div>
-                    <div>
-                        <p id="user-display" class="font-bold text-white text-xs">Administrateur</p>
-                        <p class="text-[10px] text-emerald-400 font-medium">Connecté</p>
-                    </div>
-                </div>
-                <button onclick="logout()" title="Se déconnecter" class="text-slate-400 hover:text-red-400 transition p-1.5 rounded-lg hover:bg-slate-900">
-                    <i data-lucide="log-out" class="w-4 h-4"></i>
-                </button>
-            </div>
+    <!-- APP -->
+    <div id="app-screen">
+        <aside class="sidebar">
+            <div class="sidebar-header"><i class="fas fa-bolt"></i> ELECTRO</div>
+            <ul class="sidebar-menu">
+                <li onclick="app.navigate('dashboard')" data-target="dashboard" class="active"><i class="fas fa-chart-line"></i> Tableau de bord</li>
+                <li onclick="app.navigate('stock')" data-target="stock"><i class="fas fa-boxes"></i> Stock & Produits</li>
+                <li onclick="app.navigate('achats')" data-target="achats"><i class="fas fa-shopping-cart"></i> Achats</li>
+                <li onclick="app.navigate('ventes')" data-target="ventes"><i class="fas fa-cash-register"></i> Ventes</li>
+                <li onclick="app.navigate('credits')" data-target="credits"><i class="fas fa-hand-holding-usd"></i> Crédits Clients</li>
+                <li onclick="app.navigate('cheques')" data-target="cheques"><i class="fas fa-money-check-alt"></i> Chèques</li>
+                <li onclick="app.navigate('parametres')" data-target="parametres"><i class="fas fa-cog"></i> Paramètres</li>
+                <li onclick="app.logout()" style="margin-top:auto;"><i class="fas fa-sign-out-alt"></i> Déconnexion</li>
+            </ul>
         </aside>
 
-        <!-- Contenu Principal -->
-        <main class="flex-1 p-6 md:p-8 overflow-y-auto">
-            
-            <!-- En-tête du contenu -->
-            <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                <div>
-                    <h1 id="page-title" class="text-2xl font-black text-slate-900">Tableau de bord</h1>
-                    <p class="text-xs text-slate-500">Aperçu général de votre activité et de votre stock.</p>
-                </div>
-                
-                <div class="flex items-center gap-3">
-                    <button onclick="alert('Fonctionnalité de sauvegarde Excel active')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow transition flex items-center gap-2">
-                        <i data-lucide="download" class="w-4 h-4"></i>
-                        <span>Exporter Excel</span>
-                    </button>
-                    <button onclick="logout()" class="bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-600 text-xs font-bold px-4 py-2.5 rounded-xl border border-slate-200 transition flex items-center gap-2">
-                        <i data-lucide="power" class="w-4 h-4"></i>
-                        <span>Déconnexion</span>
-                    </button>
+        <main class="main-content">
+            <header class="topbar">
+                <i class="fas fa-bars" id="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')"></i>
+                <div style="flex:1; padding:0 20px;"><input type="text" class="form-control" placeholder="Recherche globale..." style="max-width:300px; border-radius:20px;"></div>
+                <div class="topbar-actions">
+                    <i class="fas fa-moon" style="cursor:pointer;" onclick="app.toggleTheme()"></i>
+                    <div style="position:relative; cursor:pointer;" onclick="alert('Consultez la section Chèques ou Stock pour voir les alertes')">
+                        <i class="fas fa-bell"></i><span class="badge" id="alert-badge" style="display:none;">0</span>
+                    </div>
+                    <strong id="current-user-name">Admin</strong>
                 </div>
             </header>
 
-            <!-- Page 1 : Tableau de bord -->
-            <div id="page-dashboard" class="space-y-6 animate-fade-in">
-                <!-- Cartes de statistiques -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
-                        <div>
-                            <p class="text-xs font-bold text-slate-400 uppercase">Stock Total</p>
-                            <h3 class="text-2xl font-black text-slate-800 mt-1">1,420</h3>
-                            <span class="text-[11px] font-semibold text-emerald-600">+12% ce mois</span>
-                        </div>
-                        <div class="w-12 h-12 bg-blue-50 text-brand-600 rounded-xl flex items-center justify-center">
-                            <i data-lucide="boxes" class="w-6 h-6"></i>
-                        </div>
+            <div class="content-area" onclick="document.querySelector('.sidebar').classList.remove('open')">
+                
+                <!-- DASHBOARD -->
+                <section id="dashboard" class="view-section active">
+                    <h2>Vue d'ensemble</h2><br>
+                    <div class="form-row" style="margin-bottom:20px;">
+                        <div class="card stat-card" style="flex:1;"><h3 id="dash-stock-val">0 DH</h3><p class="text-muted">Valeur du Stock</p></div>
+                        <div class="card stat-card" style="flex:1;"><h3 id="dash-rupture" style="color:var(--danger);">0</h3><p class="text-muted">Produits à réapprovisionner (≤ 5)</p></div>
+                        <div class="card stat-card" style="flex:1;"><h3 id="dash-credits" style="color:var(--warning);">0 DH</h3><p class="text-muted">Crédits Clients en cours</p></div>
                     </div>
+                </section>
 
-                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
-                        <div>
-                            <p class="text-xs font-bold text-slate-400 uppercase">Ventes (Aujourd'hui)</p>
-                            <h3 class="text-2xl font-black text-slate-800 mt-1">4,850 DH</h3>
-                            <span class="text-[11px] font-semibold text-emerald-600">8 commandes</span>
-                        </div>
-                        <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center">
-                            <i data-lucide="trending-up" class="w-6 h-6"></i>
-                        </div>
+                <!-- STOCK -->
+                <section id="stock" class="view-section">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
+                        <h2>État du Stock & Produits</h2>
+                        <button class="btn btn-primary" onclick="app.openProduitModal()"><i class="fas fa-plus"></i> Nouveau Produit</button>
                     </div>
-
-                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
-                        <div>
-                            <p class="text-xs font-bold text-slate-400 uppercase">Crédits Clients</p>
-                            <h3 class="text-2xl font-black text-slate-800 mt-1">12,300 DH</h3>
-                            <span class="text-[11px] font-semibold text-amber-600">5 en attente</span>
-                        </div>
-                        <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center">
-                            <i data-lucide="clock" class="w-6 h-6"></i>
-                        </div>
-                    </div>
-
-                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
-                        <div>
-                            <p class="text-xs font-bold text-slate-400 uppercase">Valeur Inventaire</p>
-                            <h3 class="text-2xl font-black text-slate-800 mt-1">340 K DH</h3>
-                            <span class="text-[11px] font-semibold text-slate-400">Mise à jour hier</span>
-                        </div>
-                        <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center">
-                            <i data-lucide="shield-check" class="w-6 h-6"></i>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tableau récent -->
-                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                    <div class="p-5 border-b border-slate-100 flex items-center justify-between">
-                        <h3 class="font-bold text-slate-800">Dernières Opérations de Stock</h3>
-                        <span class="text-xs font-semibold bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg">En temps réel</span>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-sm text-slate-600">
-                            <thead class="bg-slate-50 text-xs uppercase font-bold text-slate-400 border-b border-slate-100">
-                                <tr>
-                                    <th class="p-4">Réf / Produit</th>
-                                    <th class="p-4">Catégorie</th>
-                                    <th class="p-4">Statut</th>
-                                    <th class="p-4">Prix Unitaire</th>
-                                    <th class="p-4 text-right">Quantité</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100 font-medium">
-                                <tr class="hover:bg-slate-50/80 transition">
-                                    <td class="p-4 font-bold text-slate-800">Câble Électrique 2.5mm² (Bobine 100m)</td>
-                                    <td class="p-4"><span class="bg-blue-50 text-blue-700 text-xs px-2.5 py-1 rounded-md font-semibold">Câblage</span></td>
-                                    <td class="p-4"><span class="text-emerald-600 flex items-center gap-1.5 text-xs font-bold"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>En Stock</span></td>
-                                    <td class="p-4">350.00 DH</td>
-                                    <td class="p-4 text-right font-bold text-slate-900">45</td>
-                                </tr>
-                                <tr class="hover:bg-slate-50/80 transition">
-                                    <td class="p-4 font-bold text-slate-800">Disjoncteur Différentiel 30mA</td>
-                                    <td class="p-4"><span class="bg-amber-50 text-amber-700 text-xs px-2.5 py-1 rounded-md font-semibold">Protection</span></td>
-                                    <td class="p-4"><span class="text-emerald-600 flex items-center gap-1.5 text-xs font-bold"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>En Stock</span></td>
-                                    <td class="p-4">180.00 DH</td>
-                                    <td class="p-4 text-right font-bold text-slate-900">28</td>
-                                </tr>
-                                <tr class="hover:bg-slate-50/80 transition">
-                                    <td class="p-4 font-bold text-slate-800">Lampe LED 12W E27 Blanc Froid</td>
-                                    <td class="p-4"><span class="bg-purple-50 text-purple-700 text-xs px-2.5 py-1 rounded-md font-semibold">Éclairage</span></td>
-                                    <td class="p-4"><span class="text-amber-600 flex items-center gap-1.5 text-xs font-bold"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>Stock Faible</span></td>
-                                    <td class="p-4">15.00 DH</td>
-                                    <td class="p-4 text-right font-bold text-amber-600">12</td>
-                                </tr>
-                            </tbody>
+                    <div class="card table-container">
+                        <table id="stock-table">
+                            <thead><tr><th>Produit</th><th>Marque</th><th>Prix d'achat</th><th>Magasin</th><th>Maison</th><th>Lmaleab</th><th>Total</th><th>Actions</th></tr></thead>
+                            <tbody id="stock-tbody"></tbody>
                         </table>
                     </div>
-                </div>
-            </div>
+                </section>
 
-            <!-- Page 2 : Stock (Masquée par défaut) -->
-            <div id="page-stock" class="hidden space-y-6 animate-fade-in">
-                <div class="bg-white p-8 rounded-2xl border border-slate-200 text-center text-slate-500">
-                    <i data-lucide="package-open" class="w-12 h-12 mx-auto text-brand-500 mb-3 animate-bounce"></i>
-                    <h3 class="font-bold text-slate-800 text-lg">Gestion du Stock Principal</h3>
-                    <p class="text-sm mt-1">L'affichage des articles et des entrées/sorties se fera ici.</p>
-                </div>
-            </div>
+                <!-- ACHATS -->
+                <section id="achats" class="view-section">
+                    <h2>Saisir un Nouvel Achat</h2><br>
+                    <div class="card">
+                        <form onsubmit="app.processAchat(event)">
+                            <div class="form-row">
+                                <div class="form-group"><label>Produit (Recherche/Nouveau)</label><input type="text" id="achat-prod" class="form-control" list="produits-list" required></div>
+                                <div class="form-group"><label>Fournisseur</label><input type="text" id="achat-fourn" class="form-control" list="fournisseurs-list" required></div>
+                                <div class="form-group"><label>Marque</label><input type="text" id="achat-marque" class="form-control" list="marques-list"></div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group"><label>Prix Unitaire d'achat (DH)</label><input type="number" step="0.01" id="achat-prix" class="form-control" required></div>
+                                <div class="form-group"><label>Qté Magasin Principal</label><input type="number" id="achat-q-princ" class="form-control" value="0"></div>
+                                <div class="form-group"><label>Qté MAISON</label><input type="number" id="achat-q-mais" class="form-control" value="0"></div>
+                                <div class="form-group"><label>Qté LMALEAB</label><input type="number" id="achat-q-lmal" class="form-control" value="0"></div>
+                            </div>
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-truck-loading"></i> Valider l'entrée en stock</button>
+                        </form>
+                    </div>
+                </section>
 
-            <!-- Page 3 : Inventaire (Masquée par défaut) -->
-            <div id="page-inventaire" class="hidden space-y-6 animate-fade-in">
-                <div class="bg-white p-8 rounded-2xl border border-slate-200 text-center text-slate-500">
-                    <i data-lucide="clipboard-list" class="w-12 h-12 mx-auto text-emerald-500 mb-3 animate-bounce"></i>
-                    <h3 class="font-bold text-slate-800 text-lg">Contrôle d'Inventaire</h3>
-                    <p class="text-sm mt-1">L'historique des contrôles et du rapprochement de stock s'affichera ici.</p>
-                </div>
-            </div>
+                <!-- VENTES -->
+                <section id="ventes" class="view-section">
+                    <h2>Enregistrer une Vente</h2><br>
+                    <div class="card">
+                        <form onsubmit="app.processVente(event)">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Produit en Stock</label>
+                                    <input type="text" id="vente-prod" class="form-control" list="produits-list" required onchange="app.checkVenteStock(this.value)">
+                                    <small id="vente-stock-info" style="color:var(--primary); font-weight:bold;"></small>
+                                </div>
+                                <div class="form-group">
+                                    <label>Déstocker depuis</label>
+                                    <select id="vente-depot" class="form-control">
+                                        <option value="qP">Magasin Principal</option>
+                                        <option value="qM">Maison</option>
+                                        <option value="qL">Lmaleab</option>
+                                    </select>
+                                </div>
+                                <div class="form-group"><label>Quantité</label><input type="number" id="vente-qte" class="form-control" value="1" min="1" required></div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group"><label>Prix de Vente Unitaire (DH)</label><input type="number" step="0.01" id="vente-prix" class="form-control" required></div>
+                                <div class="form-group">
+                                    <label>Mode de Paiement</label>
+                                    <select id="vente-paiement" class="form-control" onchange="app.toggleVentePaiement(this.value)">
+                                        <option value="Espèces">Espèces</option>
+                                        <option value="Crédit">Crédit Client</option>
+                                        <option value="Chèque">Chèque</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <!-- Champs conditionnels Crédit -->
+                            <div id="vente-credit-fields" class="form-row" style="display:none; background:rgba(202,138,4,0.1); padding:10px; border-radius:4px; margin-bottom:15px;">
+                                <div class="form-group"><label>Nom du Client</label><input type="text" id="vente-client-nom" class="form-control"></div>
+                                <div class="form-group"><label>Téléphone Client</label><input type="text" id="vente-client-tel" class="form-control"></div>
+                                <div class="form-group"><label>Avance versée (DH)</label><input type="number" step="0.01" id="vente-client-avance" class="form-control" value="0"></div>
+                            </div>
+                            <!-- Champs conditionnels Chèque -->
+                            <div id="vente-cheque-fields" class="form-row" style="display:none; background:rgba(37,99,235,0.1); padding:10px; border-radius:4px; margin-bottom:15px;">
+                                <div class="form-group"><label>Émetteur du Chèque</label><input type="text" id="vente-chq-nom" class="form-control"></div>
+                                <div class="form-group"><label>Banque</label><input type="text" id="vente-chq-banque" class="form-control" list="banques-maroc-list"></div>
+                                <div class="form-group"><label>N° Chèque</label><input type="text" id="vente-chq-num" class="form-control"></div>
+                                <div class="form-group"><label>Date d'échéance</label><input type="date" id="vente-chq-date" class="form-control"></div>
+                            </div>
 
+                            <button type="submit" class="btn btn-success"><i class="fas fa-check-circle"></i> Valider et Déstocker</button>
+                        </form>
+                    </div>
+
+                    <h3>Historique des Ventes</h3><br>
+                    <div class="card table-container">
+                        <table id="ventes-table">
+                            <thead><tr><th>Date</th><th>Produit</th><th>Qté</th><th>Total (DH)</th><th>Paiement</th><th>Client/Détails</th><th>Action</th></tr></thead>
+                            <tbody id="ventes-tbody"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- CREDITS CLIENTS -->
+                <section id="credits" class="view-section">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+                        <h2>Gestion des Crédits Clients</h2>
+                        <button class="btn btn-primary" onclick="app.showModal('creditModal')"><i class="fas fa-plus"></i> Nouveau Crédit</button>
+                    </div>
+                    <div class="card table-container">
+                        <table id="credits-table">
+                            <thead><tr><th>Client</th><th>Téléphone</th><th>Montant Total</th><th>Avances</th><th>Reste à payer</th></tr></thead>
+                            <tbody id="credits-tbody"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- CHEQUES -->
+                <section id="cheques" class="view-section">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+                        <h2>Portefeuille Chèques</h2>
+                        <button class="btn btn-primary" onclick="app.showModal('chequeModal')"><i class="fas fa-plus"></i> Ajouter Chèque</button>
+                    </div>
+                    <div class="card table-container">
+                        <table id="cheques-table">
+                            <thead><tr><th>Type</th><th>Nom/Fournisseur</th><th>Banque</th><th>N° Chèque</th><th>Montant</th><th>Date d'échéance</th><th>État</th></tr></thead>
+                            <tbody id="cheques-tbody"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- PARAMETRES -->
+                <section id="parametres" class="view-section">
+                    <h2>Paramètres</h2>
+                    <br>
+                    <div class="card">
+                        <p>Configuration de l'application, gestion des utilisateurs, et options avancées.</p>
+                        <!-- Espace pour de futurs paramètres -->
+                    </div>
+                </section>
+
+            </div>
         </main>
     </div>
 
-    <!-- ================= LOGIQUE JAVASCRIPT ================= -->
+    <!-- MODAL NOUVEAU PRODUIT -->
+    <div id="produitModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:2000; align-items:center; justify-content:center; padding: 20px;">
+        <div class="card" style="width:100%; max-width:500px; max-height:90vh; overflow-y:auto; background:var(--bg-card); position:relative;">
+            <h2 style="margin-bottom:20px; color:var(--text-main);">Nouveau Produit</h2>
+            <form onsubmit="app.saveProduit(event)">
+                
+                <div class="form-group">
+                    <label>Nom du Produit</label>
+                    <input type="text" id="prod-nom" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Catégorie</label>
+                    <input type="text" id="prod-categorie" class="form-control" placeholder="Ex: Téléviseurs, Réfrigérateurs, Téléphones..." required>
+                </div>
+
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="prod-desc" class="form-control" rows="3" placeholder="Détails, caractéristiques, couleur..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Marque</label>
+                    <input type="text" id="prod-marque" class="form-control" list="marques-list">
+                </div>
+
+                <div class="form-group">
+                    <label>Prix d'achat unitaire (DH)</label>
+                    <input type="number" step="0.01" id="prod-prix" class="form-control" required>
+                </div>
+                
+                <h4 style="margin:20px 0 10px; color:var(--text-muted);">Stock initial par dépôt</h4>
+                
+                <div class="form-group">
+                    <label>Magasin Principal</label>
+                    <input type="number" id="prod-stock-princ" class="form-control" value="0" min="0">
+                </div>
+                
+                <div class="form-group">
+                    <label>Maison</label>
+                    <input type="number" id="prod-stock-mais" class="form-control" value="0" min="0">
+                </div>
+                
+                <div class="form-group">
+                    <label>Lmaleab</label>
+                    <input type="number" id="prod-stock-lmal" class="form-control" value="0" min="0">
+                </div>
+                
+                <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:25px;">
+                    <button type="button" class="btn btn-secondary" onclick="app.closeProduitModal()">Annuler</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- SCRIPT DE BASE POUR LE FONCTIONNEMENT VISUEL -->
     <script>
-        // Initialisation des icônes Lucide au chargement
-        document.addEventListener("DOMContentLoaded", () => {
-            lucide.createIcons();
-            
-            // Vérifier si une session utilisateur est déjà en mémoire
-            const loggedUser = localStorage.getItem("ef_user");
-            if (loggedUser) {
-                showApp(loggedUser);
-            }
-        });
-
-        // Gestion de la connexion
-        function handleLogin(event) {
-            event.preventDefault();
-            const usernameInput = document.getElementById("Nour").value.trim();
-            const passwordInput = document.getElementById("Nour1969").value.trim();
-            const errorDiv = document.getElementById("login-error");
-
-            // Connexion acceptée pour tout identifiant non vide avec n'importe quel mot de passe pour tester
-            if (usernameInput.length > 0 && passwordInput.length > 0) {
-                errorDiv.classList.add("hidden");
-                localStorage.setItem("ef_user", usernameInput);
-                showApp(usernameInput);
-            } else {
-                errorDiv.classList.remove("hidden");
-            }
-        }
-
-        // Afficher l'application ERP
-        function showApp(username) {
-            document.getElementById("login-section").classList.add("hidden");
-            document.getElementById("app-section").classList.remove("hidden");
-            
-            // Mettre à jour le nom dans la barre latérale
-            const userDisplay = document.getElementById("user-display");
-            if (userDisplay) userDisplay.textContent = username;
-
-            // Rafraîchir les icônes sur la nouvelle vue
-            setTimeout(() => { lucide.createIcons(); }, 50);
-        }
-
-        // Déconnexion
-        function logout() {
-            localStorage.removeItem("ef_user");
-            document.getElementById("app-section").classList.add("hidden");
-            document.getElementById("login-section").classList.remove("hidden");
-            document.getElementById("login-form").reset();
-        }
-
-        // Navigation entre les pages
-        function showPage(pageId) {
-            // Masquer toutes les pages
-            document.getElementById("page-dashboard").classList.add("hidden");
-            document.getElementById("page-stock").classList.add("hidden");
-            document.getElementById("page-inventaire").classList.add("hidden");
-
-            // Afficher la page sélectionnée
-            const selectedPage = document.getElementById("page-" + pageId);
-            if (selectedPage) selectedPage.classList.remove("hidden");
-
-            // Changer le titre en haut
-            const titleEl = document.getElementById("page-title");
-            if (pageId === 'dashboard') titleEl.textContent = "Tableau de bord";
-            if (pageId === 'stock') titleEl.textContent = "Stock Principal";
-            if (pageId === 'inventaire') titleEl.textContent = "Inventaire";
-
-            // Recharge des icônes
-            lucide.createIcons();
-        }
+        const app = {
+            login: function(e) {
+                e.preventDefault();
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('app-screen').style.display = 'flex';
+                let user = document.getElementById('login-user').value;
+                document.getElementById('current-user-name').innerText = user;
+            },
+            logout: function() {
+                document.getElementById('login-screen').style.display = 'flex';
+                document.getElementById('app-screen').style.display = 'none';
+            },
+            navigate: function(id) {
+                document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+                document.querySelectorAll('.sidebar-menu li').forEach(el => el.classList.remove('active'));
+                
+                document.getElementById(id).classList.add('active');
+                document.querySelector(`[data-target="${id}"]`).classList.add('active');
+            },
+            toggleTheme: function() {
+                document.body.classList.toggle('dark-mode');
+            },
+            openProduitModal: function() {
+                document.getElementById('produitModal').style.display = 'flex';
+            },
+            closeProduitModal: function() {
+                document.getElementById('produitModal').style.display = 'none';
+            },
+            saveProduit: function(e) {
+                e.preventDefault();
+                alert('Produit enregistré avec succès ! (Simulation)');
+                this.closeProduitModal();
+            },
+            toggleVentePaiement: function(val) {
+                document.getElementById('vente-credit-fields').style.display = (val === 'Crédit') ? 'flex' : 'none';
+                document.getElementById('vente-cheque-fields').style.display = (val === 'Chèque') ? 'flex' : 'none';
+            },
+            showModal: function(id) {
+                alert("Ouverture de la fenêtre : " + id + " (À implémenter)");
+            },
+            processAchat: function(e) { e.preventDefault(); alert("Achat enregistré !"); },
+            processVente: function(e) { e.preventDefault(); alert("Vente enregistrée !"); },
+            checkVenteStock: function(val) { /* Logique de vérification du stock */ }
+        };
     </script>
 </body>
 </html>
